@@ -1,10 +1,15 @@
 @page "/projects/{ProjectId:guid}/tasks"
 @using Aplikasi_Proyek___Tagihan_Freelancer.Models
 @using Aplikasi_Proyek___Tagihan_Freelancer.Services
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components
+@using Microsoft.JSInterop
 @inject ITaskService TaskService
 @inject IProjectService ProjectService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
 
 <PageTitle>Project Tasks</PageTitle>
 
@@ -305,18 +310,18 @@
                 await JSRuntime.InvokeVoidAsync("alert", $"Error deleting task: {ex.Message}");
             }
         }
-    }
-
-    private void EditTask(ProjectTask task)
+    }    private void EditTask(ProjectTask task)
     {
         // For now, show an alert. In a full implementation, this would open an edit modal
         JSRuntime.InvokeVoidAsync("alert", "Edit functionality will be implemented in the next phase.");
     }
-
+    
     private void BackToProjects()
     {
         Navigation.NavigateTo("/projects");
-    }    private string GetStatusColor(ProjectStatus status)
+    }
+    
+    private string GetStatusColor(ProjectStatus status)
     {
         return status switch
         {
