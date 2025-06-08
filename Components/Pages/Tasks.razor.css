@@ -1,0 +1,43 @@
+/* Task Management Styles */
+.task-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.modal.show {
+    display: block !important;
+}
+
+.btn-check:checked + .btn-outline-primary {
+    background-color: #667eea;
+    border-color: #667eea;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px 15px 0 0 !important;
+}
+
+@media (max-width: 768px) {
+    .task-card {
+        margin-bottom: 15px;
+    }
+    
+    .btn-group {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    
+    .btn-group .btn {
+        flex: 1;
+        min-width: auto;
+    }
+}

@@ -1,0 +1,151 @@
+@page "/projects/create"
+@using Aplikasi_Proyek___Tagihan_Freelancer.Services
+@using Aplikasi_Proyek___Tagihan_Freelancer.Models
+@inject IProjectService ProjectService
+@inject IClientService ClientService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Buat Proyek Baru</PageTitle>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-plus-circle"></i>
+                        Buat Proyek Baru
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <EditForm Model="project" OnValidSubmit="HandleValidSubmit">
+                        <DataAnnotationsValidator />
+                        
+                        <div class="mb-3">
+                            <label for="clientId" class="form-label">Klien <span class="text-danger">*</span></label>
+                            <InputSelect id="clientId" class="form-select" @bind-Value="project.ClientId">
+                                <option value="">-- Pilih Klien --</option>
+                                @if (clients != null)
+                                {
+                                    @foreach (var client in clients)
+                                    {
+                                        <option value="@client.Id">@client.Name (@client.Company)</option>
+                                    }
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="@(() => project.ClientId)" class="text-danger" />
+                            @if (!clients?.Any() == true)
+                            {
+                                <div class="form-text">
+                                    <a href="/clients/create" target="_blank">Belum ada klien? Tambah klien baru</a>
+                                </div>
+                            }
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nama Proyek <span class="text-danger">*</span></label>
+                            <InputText id="name" class="form-control" @bind-Value="project.Name" />
+                            <ValidationMessage For="@(() => project.Name)" class="text-danger" />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Deskripsi</label>
+                            <InputTextArea id="description" class="form-control" rows="4" @bind-Value="project.Description" />
+                            <ValidationMessage For="@(() => project.Description)" class="text-danger" />
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="totalValue" class="form-label">Total Nilai (Rp)</label>
+                                <InputNumber id="totalValue" class="form-control" @bind-Value="project.TotalValue" />
+                                <ValidationMessage For="@(() => project.TotalValue)" class="text-danger" />
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="dueDate" class="form-label">Tanggal Deadline</label>
+                                <InputDate id="dueDate" class="form-control" @bind-Value="project.DueDate" />
+                                <ValidationMessage For="@(() => project.DueDate)" class="text-danger" />
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <InputSelect id="status" class="form-select" @bind-Value="project.Status">
+                                <option value="@ProjectStatus.Baru">Baru</option>
+                                <option value="@ProjectStatus.Aktif">Aktif</option>
+                                <option value="@ProjectStatus.Selesai">Selesai</option>
+                                <option value="@ProjectStatus.Dibatalkan">Dibatalkan</option>
+                            </InputSelect>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-secondary" @onclick="GoBack">
+                                <i class="bi bi-arrow-left"></i>
+                                Kembali
+                            </button>
+                            
+                            <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                                @if (isSubmitting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                }
+                                <i class="bi bi-check"></i>
+                                Simpan Proyek
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private Project project = new();
+    private IEnumerable<Client>? clients;
+    private bool isSubmitting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadClients();
+    }
+
+    private async Task LoadClients()
+    {
+        try
+        {
+            clients = await ClientService.GetAllClientsAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading clients: {ex.Message}");
+            clients = new List<Client>();
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        isSubmitting = true;
+        try
+        {
+            await ProjectService.CreateProjectAsync(project);
+            Navigation.NavigateTo("/projects");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating project: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/projects");
+    }
+}

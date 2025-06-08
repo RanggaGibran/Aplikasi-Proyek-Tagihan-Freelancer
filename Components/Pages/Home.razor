@@ -1,0 +1,264 @@
+﻿@page "/"
+@using Aplikasi_Proyek___Tagihan_Freelancer.Services
+@using Aplikasi_Proyek___Tagihan_Freelancer.Models
+@inject IProjectService ProjectService
+@inject IClientService ClientService
+@inject ITaskService TaskService
+@rendermode InteractiveServer
+
+<PageTitle>Dashboard - Aplikasi Proyek & Tagihan Freelancer</PageTitle>
+
+<div class="dashboard-container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="dashboard-title">
+                <i class="bi bi-speedometer2"></i>
+                Dashboard
+            </h1>
+            <p class="text-muted">Ringkasan aktivitas proyek dan tagihan Anda</p>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card stat-card-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-1 text-black">Total Klien</h5>
+                            <h2 class="mb-0 text-black">@totalClients</h2>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="bi bi-people-fill text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card stat-card-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-1 text-black">Proyek Aktif</h5>
+                            <h2 class="mb-0 text-black">@activeProjects</h2>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="bi bi-briefcase-fill text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card stat-card-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-1 text-black">Pending Tasks</h5>
+                            <h2 class="mb-0 text-black">@pendingTasks</h2>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="bi bi-list-task text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stat-card stat-card-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-1 text-black">Proyek Selesai</h5>
+                            <h2 class="mb-0 text-black">@completedProjects</h2>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="bi bi-check-circle-fill text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="border-bottom pb-2 mb-3">
+                <i class="bi bi-lightning-charge me-2"></i> Aksi Cepat
+            </h5>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="/clients/create" class="btn btn-lg btn-primary w-100 d-flex align-items-center justify-content-center">
+                <i class="bi bi-person-plus me-2"></i> Tambah Klien
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="/projects/create" class="btn btn-lg btn-success w-100 d-flex align-items-center justify-content-center">
+                <i class="bi bi-plus-circle me-2"></i> Proyek Baru
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="/tasks" class="btn btn-lg btn-info w-100 d-flex align-items-center justify-content-center">
+                <i class="bi bi-list-task me-2"></i> Kelola Tugas
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="/invoices" class="btn btn-lg btn-warning w-100 d-flex align-items-center justify-content-center">
+                <i class="bi bi-receipt me-2"></i> Buat Tagihan
+            </a>
+        </div>
+    </div>
+
+    <!-- Recent Projects -->
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i> Proyek Terbaru</h5>
+                    <a href="/projects" class="btn btn-sm btn-outline-primary">Lihat Semua</a>
+                </div>
+                <div class="card-body">
+                    @if (recentProjects?.Any() == true)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nama Proyek</th>
+                                        <th>Klien</th>
+                                        <th>Status</th>
+                                        <th>Nilai</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var project in recentProjects)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <a href="/projects/@project.Id">
+                                                    @project.Name
+                                                </a>
+                                            </td>
+                                            <td>@(project.Client?.Name ?? "Tidak Ada")</td>
+                                            <td>
+                                                <span class="badge @GetStatusBadgeClass(project.Status)">
+                                                    @GetStatusText(project.Status)
+                                                </span>
+                                            </td>
+                                            <td>@(project.Budget?.ToString("C0", new System.Globalization.CultureInfo("id-ID")) ?? "Rp0")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox display-4 text-muted"></i>
+                            <p class="mt-3">Belum ada proyek yang dibuat.</p>
+                            <a href="/projects/create" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-1"></i> Buat Proyek Baru
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-people me-2"></i> Klien Terbaru</h5>
+                    <a href="/clients" class="btn btn-sm btn-outline-primary">Lihat Semua</a>
+                </div>
+                <div class="card-body">
+                    @if (recentClients?.Any() == true)
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var client in recentClients)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <div class="client-avatar me-3">
+                                            @(client.Name.Length > 0 ? client.Name[0].ToString().ToUpper() : "")
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">@client.Name</h6>
+                                            <small class="text-muted">@(client.Company ?? "Individu")</small>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">
+                                        @client.Projects.Count() proyek
+                                    </span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-person-x display-4 text-muted"></i>
+                            <p class="mt-3">Belum ada klien yang ditambahkan.</p>
+                            <a href="/clients/create" class="btn btn-primary">
+                                <i class="bi bi-person-plus me-1"></i> Tambah Klien Baru
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int totalClients = 0;
+    private int activeProjects = 0;
+    private int pendingTasks = 0;
+    private int completedProjects = 0;
+    
+    private IEnumerable<Project>? recentProjects;
+    private IEnumerable<Client>? recentClients;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        var clients = await ClientService.GetAllClientsAsync();
+        totalClients = clients.Count();
+
+        var projects = await ProjectService.GetAllProjectsAsync();
+        activeProjects = projects.Count(p => p.Status == ProjectStatus.Aktif);
+        completedProjects = projects.Count(p => p.Status == ProjectStatus.Selesai);
+        
+        recentProjects = projects.OrderByDescending(p => p.CreatedAt).Take(5);
+        recentClients = clients.OrderByDescending(c => c.CreatedAt).Take(5);
+
+        var tasks = await TaskService.GetTasksByStatusAsync(Models.TaskStatus.ToDo);
+        pendingTasks = tasks.Count();
+    }
+
+    private string GetStatusBadgeClass(ProjectStatus status)
+    {
+        return status switch
+        {
+            ProjectStatus.Baru => "bg-secondary",
+            ProjectStatus.Aktif => "bg-primary",
+            ProjectStatus.OnHold => "bg-warning",
+            ProjectStatus.Selesai => "bg-success",
+            ProjectStatus.Dibatalkan => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetStatusText(ProjectStatus status)
+    {
+        return status.ToString();
+    }
+}

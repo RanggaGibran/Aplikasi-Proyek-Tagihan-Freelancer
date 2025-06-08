@@ -1,0 +1,367 @@
+@page "/tasks"
+@using Aplikasi_Proyek___Tagihan_Freelancer.Services
+@using Aplikasi_Proyek___Tagihan_Freelancer.Models
+@inject ITaskService TaskService
+@inject IProjectService ProjectService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Manajemen Tugas</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="page-title">
+                    <i class="bi bi-list-task"></i>
+                    Manajemen Tugas
+                </h1>
+                <button class="btn btn-primary" @onclick="ShowCreateTaskModal">
+                    <i class="bi bi-plus-circle"></i>
+                    Tambah Tugas
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Status Filter -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="statusFilter" id="all" autocomplete="off" 
+                       @onchange="() => FilterByStatus(null)" checked="@(selectedStatus == null)">
+                <label class="btn btn-outline-primary" for="all">Semua</label>
+
+                <input type="radio" class="btn-check" name="statusFilter" id="todo" autocomplete="off" 
+                       @onchange="() => FilterByStatus(Models.TaskStatus.ToDo)" checked="@(selectedStatus == Models.TaskStatus.ToDo)">
+                <label class="btn btn-outline-primary" for="todo">To Do</label>
+
+                <input type="radio" class="btn-check" name="statusFilter" id="progress" autocomplete="off" 
+                       @onchange="() => FilterByStatus(Models.TaskStatus.InProgress)" checked="@(selectedStatus == Models.TaskStatus.InProgress)">
+                <label class="btn btn-outline-primary" for="progress">In Progress</label>
+
+                <input type="radio" class="btn-check" name="statusFilter" id="done" autocomplete="off" 
+                       @onchange="() => FilterByStatus(Models.TaskStatus.Completed)" checked="@(selectedStatus == Models.TaskStatus.Completed)">
+                <label class="btn btn-outline-primary" for="done">Done</label>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (groupedTasks?.Any() == true)
+    {
+        @foreach (var projectGroup in groupedTasks)
+        {
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-briefcase"></i>
+                        @projectGroup.Key.Name
+                        <small class="text-muted">(@projectGroup.Key.Client?.Name)</small>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        @foreach (var task in projectGroup)
+                        {
+                            <div class="col-lg-4 col-md-6 mb-3">
+                                <div class="card task-card h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <span class="badge @GetTaskStatusBadgeClass(task.Status)">
+                                                @GetTaskStatusText(task.Status)
+                                            </span>
+                                            <div class="dropdown">
+                                                <button class="btn btn-link btn-sm" type="button" data-bs-toggle="dropdown">
+                                                    <i class="bi bi-three-dots-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><button class="dropdown-item" @onclick="() => EditTask(task)">
+                                                        <i class="bi bi-pencil"></i> Edit
+                                                    </button></li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li><button class="dropdown-item" @onclick="() => UpdateTaskStatus(task, Models.TaskStatus.ToDo)">
+                                                        <i class="bi bi-circle"></i> Set To Do
+                                                    </button></li>
+                                                    <li><button class="dropdown-item" @onclick="() => UpdateTaskStatus(task, Models.TaskStatus.InProgress)">
+                                                        <i class="bi bi-play-circle"></i> Set In Progress
+                                                    </button></li>
+                                                    <li><button class="dropdown-item" @onclick="() => UpdateTaskStatus(task, Models.TaskStatus.Completed)">
+                                                        <i class="bi bi-check-circle"></i> Mark Done
+                                                    </button></li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li><button class="dropdown-item text-danger" @onclick="() => DeleteTask(task.Id)">
+                                                        <i class="bi bi-trash"></i> Hapus
+                                                    </button></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        
+                                        <p class="card-text">@task.Description</p>
+                                        
+                                        @if (task.Value > 0)
+                                        {
+                                            <p class="text-success fw-bold mb-2">
+                                                @task.Value.ToString("C", new System.Globalization.CultureInfo("id-ID"))
+                                            </p>
+                                        }
+                                        
+                                        <small class="text-muted">
+                                            <i class="bi bi-calendar"></i>
+                                            @task.CreatedAt.ToString("dd MMM yyyy")
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <i class="bi bi-list-task display-1 text-muted"></i>
+            <h3 class="mt-3 text-muted">
+                @(selectedStatus.HasValue ? $"Tidak ada tugas dengan status {GetTaskStatusText(selectedStatus.Value)}" : "Belum ada tugas")
+            </h3>
+            <p class="text-muted">Tugas akan muncul ketika Anda menambahkannya ke proyek.</p>
+            <button class="btn btn-primary" @onclick="ShowCreateTaskModal">
+                <i class="bi bi-plus-circle"></i>
+                Tambah Tugas Pertama
+            </button>
+        </div>
+    }
+</div>
+
+<!-- Create/Edit Task Modal -->
+@if (showTaskModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        @(editingTask != null ? "Edit Tugas" : "Tambah Tugas Baru")
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseTaskModal"></button>
+                </div>
+                <EditForm Model="currentTask" OnValidSubmit="HandleTaskSubmit">
+                    <DataAnnotationsValidator />
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Proyek <span class="text-danger">*</span></label>
+                            <InputSelect class="form-select" @bind-Value="currentTask.ProjectId">
+                                <option value="">-- Pilih Proyek --</option>
+                                @if (projects != null)
+                                {
+                                    @foreach (var project in projects)
+                                    {
+                                        <option value="@project.Id">@project.Name (@project.Client?.Name)</option>
+                                    }
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="@(() => currentTask.ProjectId)" class="text-danger" />
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Deskripsi <span class="text-danger">*</span></label>
+                            <InputTextArea class="form-control" rows="3" @bind-Value="currentTask.Description" />
+                            <ValidationMessage For="@(() => currentTask.Description)" class="text-danger" />
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Status</label>
+                                <InputSelect class="form-select" @bind-Value="currentTask.Status">                                    <option value="@Models.TaskStatus.ToDo">To Do</option>
+                                    <option value="@Models.TaskStatus.InProgress">In Progress</option>
+                                    <option value="@Models.TaskStatus.Completed">Completed</option>
+                                </InputSelect>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Nilai (Rp)</label>
+                                <InputNumber class="form-control" @bind-Value="currentTask.Value" />
+                                <ValidationMessage For="@(() => currentTask.Value)" class="text-danger" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseTaskModal">Batal</button>
+                        <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                            @if (isSubmitting)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            @(editingTask != null ? "Update" : "Simpan")
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private IEnumerable<IGrouping<Project, ProjectTask>>? groupedTasks;
+    private IEnumerable<Project>? projects;
+    private Models.TaskStatus? selectedStatus = null;
+    private bool isLoading = true;
+    private bool showTaskModal = false;
+    private bool isSubmitting = false;
+    
+    private ProjectTask currentTask = new();
+    private ProjectTask? editingTask = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            projects = await ProjectService.GetAllProjectsAsync();
+            await LoadTasks();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadTasks()
+    {
+        try
+        {
+            var allTasks = new List<ProjectTask>();
+            if (projects != null)
+            {
+                foreach (var project in projects)
+                {
+                    var tasks = await TaskService.GetTasksByProjectIdAsync(project.Id);
+                    allTasks.AddRange(tasks);
+                }
+            }
+
+            var filteredTasks = selectedStatus.HasValue 
+                ? allTasks.Where(t => t.Status == selectedStatus.Value)
+                : allTasks;
+
+            groupedTasks = filteredTasks.GroupBy(t => t.Project).Where(g => g.Any());
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading tasks: {ex.Message}");
+        }
+    }
+
+    private async Task FilterByStatus(Models.TaskStatus? status)
+    {
+        selectedStatus = status;
+        await LoadTasks();
+    }
+
+    private void ShowCreateTaskModal()
+    {
+        editingTask = null;
+        currentTask = new ProjectTask();
+        showTaskModal = true;
+    }
+
+    private void EditTask(ProjectTask task)
+    {
+        editingTask = task;
+        currentTask = new ProjectTask
+        {
+            Id = task.Id,
+            ProjectId = task.ProjectId,
+            Description = task.Description,
+            Status = task.Status,
+            Value = task.Value
+        };
+        showTaskModal = true;
+    }
+
+    private void CloseTaskModal()
+    {
+        showTaskModal = false;
+        editingTask = null;
+        currentTask = new ProjectTask();
+    }
+
+    private async Task HandleTaskSubmit()
+    {
+        isSubmitting = true;
+        try
+        {
+            if (editingTask != null)
+            {
+                await TaskService.UpdateTaskAsync(currentTask);
+            }
+            else
+            {
+                await TaskService.CreateTaskAsync(currentTask);
+            }
+            
+            CloseTaskModal();
+            await LoadTasks();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving task: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task UpdateTaskStatus(ProjectTask task, Models.TaskStatus newStatus)
+    {
+        if (await TaskService.UpdateTaskStatusAsync(task.Id, newStatus))
+        {
+            await LoadTasks();
+        }
+    }
+
+    private async Task DeleteTask(Guid taskId)
+    {
+        if (await TaskService.DeleteTaskAsync(taskId))
+        {
+            await LoadTasks();
+        }
+    }    private string GetTaskStatusBadgeClass(Models.TaskStatus status)
+    {
+        return status switch
+        {
+            Models.TaskStatus.ToDo => "bg-secondary",
+            Models.TaskStatus.InProgress => "bg-warning",
+            Models.TaskStatus.Completed => "bg-success",
+            _ => "bg-secondary"
+        };
+    }    private string GetTaskStatusText(Models.TaskStatus status)
+    {
+        return status switch
+        {
+            Models.TaskStatus.ToDo => "To Do",
+            Models.TaskStatus.InProgress => "In Progress",
+            Models.TaskStatus.Completed => "Completed",
+            _ => "Unknown"
+        };
+    }
+}
