@@ -1,49 +1,64 @@
-﻿<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+﻿<nav class="navbar navbar-expand-lg navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">
-            <i class="bi bi-briefcase me-2"></i>Aplikasi Proyek & Tagihan Freelancer
+            <i class="bi bi-briefcase-fill me-2"></i>
+            <span class="fw-bold">FreelancePro</span>
         </a>
         
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
-                    <a class="nav-link" href="">
-                        <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                    <a class="nav-link @GetActiveClass("/")" href="/">
+                        <i class="bi bi-speedometer2 me-2"></i>Dashboard
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="clients">
-                        <i class="bi bi-people me-1"></i> Klien
+                    <a class="nav-link @GetActiveClass("/clients")" href="/clients">
+                        <i class="bi bi-people me-2"></i>Klien
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="projects">
-                        <i class="bi bi-briefcase me-1"></i> Proyek
+                    <a class="nav-link @GetActiveClass("/projects")" href="/projects">
+                        <i class="bi bi-briefcase me-2"></i>Proyek
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="tasks">
-                        <i class="bi bi-list-task me-1"></i> Tugas
+                    <a class="nav-link @GetActiveClass("/tasks")" href="/tasks">
+                        <i class="bi bi-list-task me-2"></i>Tugas
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="invoices">
-                        <i class="bi bi-receipt me-1"></i> Tagihan
+                    <a class="nav-link @GetActiveClass("/invoices")" href="/invoices">
+                        <i class="bi bi-receipt me-2"></i>Tagihan
                     </a>
                 </li>
             </ul>
             <div class="navbar-nav">
                 <div class="nav-item">
                     <span class="navbar-text">
-                        <i class="bi bi-person-circle me-2"></i>Admin
+                        <i class="bi bi-person-circle me-2"></i>
+                        <span class="fw-medium">Admin</span>
                     </span>
                 </div>
             </div>
         </div>
     </div>
 </nav>
+
+@code {
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private string GetActiveClass(string path)
+    {
+        var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri);
+        if (path == "/" && string.IsNullOrEmpty(currentPath))
+            return "active";
+        
+        return currentPath.StartsWith(path.TrimStart('/')) ? "active" : "";
+    }
+}
 

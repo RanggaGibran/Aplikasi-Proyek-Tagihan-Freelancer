@@ -1,23 +1,36 @@
-# Aplikasi Proyek & Tagihan Freelancer
+# FreelancePro - Aplikasi Proyek & Tagihan Freelancer
 
-🚀 **Aplikasi manajemen proyek dan tagihan untuk freelancer** - Solusi self-hosted yang sederhana dan efisien untuk mengelola klien, proyek, tugas, dan tagihan tanpa biaya langganan bulanan.
+🚀 **Modern Freelancer Project & Invoice Management System** - A self-hosted, beautifully designed solution for managing clients, projects, tasks, and invoices with a stunning dark theme UI.
 
-## 📋 Fitur Utama
+## ✨ Key Features
 
-- **Manajemen Klien**: Kelola informasi klien dengan mudah
-- **Manajemen Proyek**: Buat dan pantau proyek dari awal hingga selesai
-- **Manajemen Tugas**: Lacak progres tugas dalam setiap proyek
-- **Sistem Tagihan**: Buat dan kelola invoice untuk klien
-- **Dashboard**: Ringkasan visual aktivitas dan statistik
-- **Responsive Design**: Bekerja sempurna di desktop dan mobile
+- **Modern Dark UI**: Beautiful, responsive dark theme with gradient accents
+- **Client Management**: Comprehensive client information management
+- **Project Management**: Create and monitor projects from start to finish
+- **Task Management**: Track task progress within each project
+- **Invoice System**: Create and manage professional invoices
+- **Dashboard**: Visual overview with statistics and quick actions
+- **Responsive Design**: Perfect experience on desktop, tablet, and mobile
+- **Real-time Updates**: Blazor Server for instant UI updates
+- **No Monthly Fees**: Self-hosted solution, pay once and own forever
 
-## 🛠️ Teknologi yang Digunakan
+## 🎨 Design Features
+
+- **Modern Dark Theme**: Sleek dark interface with purple/blue gradients
+- **Glassmorphism Effects**: Beautiful backdrop blur and transparency effects
+- **Smooth Animations**: Fluid transitions and hover effects
+- **Card-based Layout**: Clean, organized information presentation
+- **Gradient Accents**: Eye-catching purple-to-blue color schemes
+- **Professional Typography**: Clean, readable fonts with proper hierarchy
+
+## 🛠️ Technology Stack
 
 - **Framework**: .NET 9.0 Blazor Server
-- **Database**: Entity Framework Core (In-Memory untuk development)
-- **UI Framework**: Bootstrap 5
+- **Database**: Entity Framework Core with In-Memory provider
+- **UI Framework**: Bootstrap 5.3
 - **Icons**: Bootstrap Icons
-- **Styling**: Custom CSS dengan gradien modern
+- **Styling**: Custom CSS with modern dark theme
+- **Deployment**: Docker support, Heroku ready
 
 ## 🚀 Quick Start
 
