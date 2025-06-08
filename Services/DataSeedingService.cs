@@ -223,16 +223,13 @@ public class DataSeedingService
                 CreatedAt = DateTime.UtcNow.AddMonths(-2)
             }
         };        _context.ProjectTasks.AddRange(tasks);
-        await _context.SaveChangesAsync();
-
-        // Create sample invoices
+        await _context.SaveChangesAsync();        // Create sample invoices
         var invoices = new List<Invoice>
         {
             new Invoice
             {
                 Id = Guid.NewGuid(),
                 InvoiceNumber = "INV-001",
-                ClientId = clients[0].Id,
                 ProjectId = projects[2].Id, // Mobile App project (completed)
                 IssueDate = DateTime.UtcNow.AddMonths(-1),
                 DueDate = DateTime.UtcNow.AddDays(-15),
@@ -244,7 +241,6 @@ public class DataSeedingService
             {
                 Id = Guid.NewGuid(),
                 InvoiceNumber = "INV-002",
-                ClientId = clients[1].Id,
                 ProjectId = projects[0].Id, // E-commerce project (ongoing)
                 IssueDate = DateTime.UtcNow.AddDays(-15),
                 DueDate = DateTime.UtcNow.AddDays(15),
@@ -256,8 +252,7 @@ public class DataSeedingService
             {
                 Id = Guid.NewGuid(),
                 InvoiceNumber = "INV-003",
-                ClientId = clients[2].Id,
-                ProjectId = null, // Manual invoice without project
+                ProjectId = projects[1].Id, // Dashboard project 
                 IssueDate = DateTime.UtcNow.AddDays(-7),
                 DueDate = DateTime.UtcNow.AddDays(23),
                 Status = InvoiceStatus.Draft,
@@ -267,9 +262,7 @@ public class DataSeedingService
         };
 
         _context.Invoices.AddRange(invoices);
-        await _context.SaveChangesAsync();
-
-        // Create sample invoice items
+        await _context.SaveChangesAsync();        // Create sample invoice items
         var invoiceItems = new List<InvoiceItem>
         {
             // Items for INV-001 (Mobile App - completed tasks)
@@ -279,8 +272,7 @@ public class DataSeedingService
                 InvoiceId = invoices[0].Id,
                 Description = "App Architecture Design",
                 Quantity = 1,
-                UnitPrice = 5000000,
-                Amount = 5000000
+                UnitPrice = 5000000
             },
             new InvoiceItem
             {
@@ -288,8 +280,7 @@ public class DataSeedingService
                 InvoiceId = invoices[0].Id,
                 Description = "Real-time Chat Feature Implementation",
                 Quantity = 1,
-                UnitPrice = 10000000,
-                Amount = 10000000
+                UnitPrice = 10000000
             },
             new InvoiceItem
             {
@@ -297,8 +288,7 @@ public class DataSeedingService
                 InvoiceId = invoices[0].Id,
                 Description = "App Store Deployment",
                 Quantity = 1,
-                UnitPrice = 3000000,
-                Amount = 3000000
+                UnitPrice = 3000000
             },
 
             // Items for INV-002 (E-commerce - partial)
@@ -308,8 +298,7 @@ public class DataSeedingService
                 InvoiceId = invoices[1].Id,
                 Description = "Homepage Design & Development",
                 Quantity = 1,
-                UnitPrice = 8000000,
-                Amount = 8000000
+                UnitPrice = 8000000
             },
             new InvoiceItem
             {
@@ -317,8 +306,7 @@ public class DataSeedingService
                 InvoiceId = invoices[1].Id,
                 Description = "Product Catalog Implementation",
                 Quantity = 1,
-                UnitPrice = 7000000,
-                Amount = 7000000
+                UnitPrice = 7000000
             },
 
             // Items for INV-003 (Manual consultation)
@@ -328,8 +316,7 @@ public class DataSeedingService
                 InvoiceId = invoices[2].Id,
                 Description = "System Architecture Review",
                 Quantity = 8,
-                UnitPrice = 500000,
-                Amount = 4000000
+                UnitPrice = 500000
             },
             new InvoiceItem
             {
@@ -337,18 +324,15 @@ public class DataSeedingService
                 InvoiceId = invoices[2].Id,
                 Description = "Performance Optimization Consultation",
                 Quantity = 4,
-                UnitPrice = 750000,
-                Amount = 3000000
+                UnitPrice = 750000
             }
-        };
-
-        _context.InvoiceItems.AddRange(invoiceItems);
+        };        _context.InvoiceItems.AddRange(invoiceItems);
         await _context.SaveChangesAsync();
 
         // Update invoice totals
-        invoices[0].TotalAmount = invoiceItems.Where(i => i.InvoiceId == invoices[0].Id).Sum(i => i.Amount);
-        invoices[1].TotalAmount = invoiceItems.Where(i => i.InvoiceId == invoices[1].Id).Sum(i => i.Amount);
-        invoices[2].TotalAmount = invoiceItems.Where(i => i.InvoiceId == invoices[2].Id).Sum(i => i.Amount);
+        invoices[0].TotalAmount = invoiceItems.Where(i => i.InvoiceId == invoices[0].Id).Sum(i => i.Total);
+        invoices[1].TotalAmount = invoiceItems.Where(i => i.InvoiceId == invoices[1].Id).Sum(i => i.Total);
+        invoices[2].TotalAmount = invoiceItems.Where(i => i.InvoiceId == invoices[2].Id).Sum(i => i.Total);
 
         _context.Invoices.UpdateRange(invoices);
         await _context.SaveChangesAsync();
