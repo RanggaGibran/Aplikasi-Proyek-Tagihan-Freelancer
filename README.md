@@ -169,9 +169,9 @@ Proyek ini dilisensikan di bawah [MIT License](LICENSE).
 
 ## 🙋‍♂️ Kontak
 
-**Nama Anda** - [email@example.com](mailto:email@example.com)
+**Nama Anda** - [email@example.com](mailto:anggakatio73@gmail.com)
 
-Project Link: [https://github.com/yourusername/aplikasi-proyek-tagihan-freelancer](https://github.com/yourusername/aplikasi-proyek-tagihan-freelancer)
+Project Link: [https://github.com/RanggaGibran/aplikasi-proyek-tagihan-freelancer](https://github.com/RanggaGibran/aplikasi-proyek-tagihan-freelancer)
 
 ---
 
