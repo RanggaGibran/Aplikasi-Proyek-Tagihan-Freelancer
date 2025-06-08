@@ -1,0 +1,205 @@
+@page "/invoices/create"
+@using Aplikasi_Proyek___Tagihan_Freelancer.Services
+@using Aplikasi_Proyek___Tagihan_Freelancer.Models
+@inject IInvoiceService InvoiceService
+@inject IProjectService ProjectService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+<PageTitle>Buat Invoice Baru</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/invoices">Tagihan</a></li>
+                    <li class="breadcrumb-item active">Buat Invoice Baru</li>
+                </ol>
+            </nav>
+            <h1 class="page-title">
+                <i class="bi bi-plus-circle me-2"></i> Buat Invoice Baru
+            </h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Pilih Metode Pembuatan Invoice</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-primary">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-briefcase display-4 text-primary mb-3"></i>
+                                    <h5>Dari Proyek</h5>
+                                    <p class="text-muted">Buat invoice otomatis berdasarkan proyek yang sudah selesai</p>
+                                    <button class="btn btn-primary" @onclick="ShowProjectSelection">
+                                        Pilih Proyek
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-secondary">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-pencil-square display-4 text-secondary mb-3"></i>
+                                    <h5>Manual</h5>
+                                    <p class="text-muted">Buat invoice kosong dan isi detail secara manual</p>
+                                    <button class="btn btn-secondary" @onclick="CreateManualInvoice">
+                                        Buat Manual
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (showProjectSelection)
+    {
+        <div class="row mt-4">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Pilih Proyek</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (isLoadingProjects)
+                        {
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        }
+                        else if (!projects.Any())
+                        {
+                            <div class="text-center text-muted py-4">
+                                <i class="bi bi-briefcase display-6"></i>
+                                <div>Belum ada proyek yang tersedia.</div>
+                                <a href="/projects/create" class="btn btn-primary mt-3">
+                                    Buat Proyek Baru
+                                </a>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Nama Proyek</th>
+                                            <th>Klien</th>
+                                            <th>Status</th>
+                                            <th>Nilai</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var project in projects)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <div>@project.Name</div>
+                                                    <small class="text-muted">@(project.Description?.Length > 50 ? project.Description.Substring(0, 50) + "..." : project.Description)</small>
+                                                </td>
+                                                <td>@project.Client.Name</td>
+                                                <td>
+                                                    <span class="badge @GetProjectStatusBadgeClass(project.Status)">
+                                                        @GetProjectStatusText(project.Status)
+                                                    </span>
+                                                </td>
+                                                <td>Rp @project.TotalValue.ToString("N0")</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-primary" @onclick="() => CreateInvoiceFromProject(project.Id)">
+                                                        <i class="bi bi-plus-circle me-1"></i> Buat Invoice
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Project> projects = new();
+    private bool showProjectSelection = false;
+    private bool isLoadingProjects = false;
+
+    private async Task ShowProjectSelection()
+    {
+        showProjectSelection = true;
+        isLoadingProjects = true;
+        
+        try
+        {
+            projects = (await ProjectService.GetAllProjectsAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error loading projects: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingProjects = false;
+        }
+    }
+
+    private async Task CreateInvoiceFromProject(Guid projectId)
+    {
+        try
+        {
+            var invoice = await InvoiceService.CreateInvoiceFromProjectAsync(projectId);
+            Navigation.NavigateTo($"/invoices/edit/{invoice.Id}");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error creating invoice: {ex.Message}");
+        }
+    }
+
+    private void CreateManualInvoice()
+    {
+        Navigation.NavigateTo("/invoices/edit/new");
+    }
+
+    private string GetProjectStatusText(ProjectStatus status)
+    {
+        return status switch
+        {
+            ProjectStatus.Baru => "Baru",
+            ProjectStatus.Aktif => "Aktif",
+            ProjectStatus.Selesai => "Selesai",
+            ProjectStatus.Tertunda => "Tertunda",
+            ProjectStatus.Dibatalkan => "Dibatalkan",
+            _ => status.ToString()
+        };
+    }
+
+    private string GetProjectStatusBadgeClass(ProjectStatus status)
+    {
+        return status switch
+        {
+            ProjectStatus.Baru => "bg-info",
+            ProjectStatus.Aktif => "bg-primary",
+            ProjectStatus.Selesai => "bg-success",
+            ProjectStatus.Tertunda => "bg-warning",
+            ProjectStatus.Dibatalkan => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+}

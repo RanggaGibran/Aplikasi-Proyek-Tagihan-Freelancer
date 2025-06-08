@@ -1,4 +1,11 @@
 @page "/invoices"
+@using Aplikasi_Proyek___Tagihan_Freelancer.Services
+@using Aplikasi_Proyek___Tagihan_Freelancer.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@inject IInvoiceService InvoiceService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
 <PageTitle>Manajemen Tagihan</PageTitle>
@@ -9,41 +16,274 @@
             <h1 class="page-title">
                 <i class="bi bi-receipt me-2"></i> Manajemen Tagihan
             </h1>
-            <button class="btn btn-primary" disabled>
+            <a href="/invoices/create" class="btn btn-primary">
                 <i class="bi bi-plus-circle me-1"></i> Buat Invoice Baru
-            </button>
+            </a>
         </div>
     </div>
 
+    <!-- Filter Buttons -->
     <div class="row mb-4">
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-body text-center py-5">
-                    <i class="bi bi-receipt display-1 text-muted"></i>
-                    <h3 class="mt-3 text-muted">Fitur Tagihan</h3>
-                    <p class="text-muted">Fitur manajemen tagihan akan diimplementasikan pada fase berikutnya.</p>
-                    <div class="alert alert-info mt-4">
-                        <strong>Coming Soon!</strong> Fitur ini akan tersedia di versi 1.1 sesuai roadmap pengembangan.
-                    </div>
-                </div>
+        <div class="col-md-8">
+            <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="statusFilter" id="all" autocomplete="off" 
+                       @onchange="() => FilterByStatus(null)" checked="@(selectedStatus == null)">
+                <label class="btn btn-outline-primary" for="all">Semua</label>
+
+                <input type="radio" class="btn-check" name="statusFilter" id="draft" autocomplete="off" 
+                       @onchange="() => FilterByStatus(InvoiceStatus.Draft)" checked="@(selectedStatus == InvoiceStatus.Draft)">
+                <label class="btn btn-outline-primary" for="draft">Draft</label>
+
+                <input type="radio" class="btn-check" name="statusFilter" id="sent" autocomplete="off" 
+                       @onchange="() => FilterByStatus(InvoiceStatus.Sent)" checked="@(selectedStatus == InvoiceStatus.Sent)">
+                <label class="btn btn-outline-primary" for="sent">Terkirim</label>
+
+                <input type="radio" class="btn-check" name="statusFilter" id="paid" autocomplete="off" 
+                       @onchange="() => FilterByStatus(InvoiceStatus.Paid)" checked="@(selectedStatus == InvoiceStatus.Paid)">
+                <label class="btn btn-outline-primary" for="paid">Lunas</label>
+
+                <input type="radio" class="btn-check" name="statusFilter" id="overdue" autocomplete="off" 
+                       @onchange="() => FilterByStatus(InvoiceStatus.Overdue)" checked="@(selectedStatus == InvoiceStatus.Overdue)">
+                <label class="btn btn-outline-primary" for="overdue">Jatuh Tempo</label>
             </div>
         </div>
     </div>
 
-    <!-- Placeholder Table for Future Invoice List -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Daftar Invoice</h5>
-                </div>
-                <div class="card-body">
-                    <div class="text-center text-muted py-4">
-                        <i class="bi bi-file-earmark-text display-6"></i>
-                        <div>Belum ada data invoice.</div>
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (!filteredInvoices.Any())
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-receipt display-1 text-muted"></i>
+                        <h3 class="mt-3 text-muted">Belum Ada Invoice</h3>
+                        <p class="text-muted">Mulai buat invoice pertama Anda untuk mengelola tagihan proyek.</p>
+                        <a href="/invoices/create" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i> Buat Invoice Pertama
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    }
+    else
+    {
+        <!-- Invoices Table -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Daftar Invoice (@filteredInvoices.Count())</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Nomor Invoice</th>
+                                        <th>Proyek</th>
+                                        <th>Klien</th>
+                                        <th>Tanggal</th>
+                                        <th>Jatuh Tempo</th>
+                                        <th>Total</th>
+                                        <th>Status</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var invoice in filteredInvoices)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@invoice.InvoiceNumber</strong>
+                                            </td>
+                                            <td>
+                                                <div>@invoice.Project.Name</div>
+                                                <small class="text-muted">@(invoice.Project.Description?.Length > 50 ? invoice.Project.Description.Substring(0, 50) + "..." : invoice.Project.Description)</small>
+                                            </td>
+                                            <td>
+                                                <div>@invoice.Project.Client.Name</div>
+                                                @if (!string.IsNullOrEmpty(invoice.Project.Client.Company))
+                                                {
+                                                    <small class="text-muted">@invoice.Project.Client.Company</small>
+                                                }
+                                            </td>
+                                            <td>@invoice.IssueDate.ToString("dd/MM/yyyy")</td>
+                                            <td>@invoice.DueDate.ToString("dd/MM/yyyy")</td>
+                                            <td><strong>Rp @invoice.TotalAmount.ToString("N0")</strong></td>
+                                            <td>
+                                                <span class="badge @GetStatusBadgeClass(invoice.Status)">
+                                                    @GetStatusText(invoice.Status)
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="/invoices/edit/@invoice.Id" class="btn btn-sm btn-outline-primary" title="Edit">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <button class="btn btn-sm btn-outline-success" @onclick="() => DownloadPdf(invoice.Id)" title="Download PDF">
+                                                        <i class="bi bi-download"></i>
+                                                    </button>
+                                                    @if (invoice.Status == InvoiceStatus.Draft)
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-info" @onclick="() => MarkAsSent(invoice.Id)" title="Tandai Terkirim">
+                                                            <i class="bi bi-send"></i>
+                                                        </button>
+                                                    }
+                                                    @if (invoice.Status == InvoiceStatus.Sent || invoice.Status == InvoiceStatus.Overdue)
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-success" @onclick="() => MarkAsPaid(invoice.Id)" title="Tandai Lunas">
+                                                            <i class="bi bi-check-circle"></i>
+                                                        </button>
+                                                    }
+                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteInvoice(invoice.Id)" title="Hapus">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 </div>
+
+@code {
+    private List<Invoice> invoices = new();
+    private IEnumerable<Invoice> filteredInvoices = new List<Invoice>();
+    private InvoiceStatus? selectedStatus = null;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInvoices();
+    }
+
+    private async Task LoadInvoices()
+    {
+        isLoading = true;
+        try
+        {
+            invoices = (await InvoiceService.GetAllInvoicesAsync()).ToList();
+            FilterInvoices();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error loading invoices: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void FilterByStatus(InvoiceStatus? status)
+    {
+        selectedStatus = status;
+        FilterInvoices();
+    }
+
+    private void FilterInvoices()
+    {
+        filteredInvoices = selectedStatus.HasValue 
+            ? invoices.Where(i => i.Status == selectedStatus.Value)
+            : invoices;
+    }
+
+    private async Task MarkAsSent(Guid invoiceId)
+    {
+        try
+        {
+            await InvoiceService.UpdateInvoiceStatusAsync(invoiceId, InvoiceStatus.Sent);
+            await LoadInvoices();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error updating invoice: {ex.Message}");
+        }
+    }
+
+    private async Task MarkAsPaid(Guid invoiceId)
+    {
+        try
+        {
+            await InvoiceService.UpdateInvoiceStatusAsync(invoiceId, InvoiceStatus.Paid);
+            await LoadInvoices();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error updating invoice: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteInvoice(Guid invoiceId)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Apakah Anda yakin ingin menghapus invoice ini?");
+        if (!confirmed) return;
+
+        try
+        {
+            await InvoiceService.DeleteInvoiceAsync(invoiceId);
+            await LoadInvoices();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error deleting invoice: {ex.Message}");
+        }
+    }
+
+    private async Task DownloadPdf(Guid invoiceId)
+    {
+        try
+        {
+            var pdfBytes = await InvoiceService.GenerateInvoicePdfAsync(invoiceId);
+            var invoice = invoices.FirstOrDefault(i => i.Id == invoiceId);
+            var fileName = $"Invoice_{invoice?.InvoiceNumber}_{DateTime.Now:yyyyMMdd}.pdf";
+            
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, Convert.ToBase64String(pdfBytes));
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error generating PDF: {ex.Message}");
+        }
+    }
+
+    private string GetStatusText(InvoiceStatus status)
+    {
+        return status switch
+        {
+            InvoiceStatus.Draft => "Draft",
+            InvoiceStatus.Sent => "Terkirim",
+            InvoiceStatus.Paid => "Lunas",
+            InvoiceStatus.Overdue => "Jatuh Tempo",
+            InvoiceStatus.Cancelled => "Dibatalkan",
+            _ => status.ToString()
+        };
+    }
+
+    private string GetStatusBadgeClass(InvoiceStatus status)
+    {
+        return status switch
+        {
+            InvoiceStatus.Draft => "bg-secondary",
+            InvoiceStatus.Sent => "bg-primary",
+            InvoiceStatus.Paid => "bg-success",
+            InvoiceStatus.Overdue => "bg-danger",
+            InvoiceStatus.Cancelled => "bg-warning",
+            _ => "bg-secondary"
+        };
+    }
+}

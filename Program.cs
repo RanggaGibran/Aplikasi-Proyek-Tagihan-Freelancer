@@ -9,14 +9,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Add Entity Framework
+// Add Entity Framework with SQLite
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+    ?? "Data Source=FreelancerApp.db";
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseInMemoryDatabase("FreelancerApp")); // Using InMemory for development
+    options.UseSqlite(connectionString));
 
 // Add Services
 builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<DataSeedingService>();
 
 var app = builder.Build();
@@ -25,7 +28,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    context.Database.EnsureCreated();
+    context.Database.Migrate(); // Use migrations instead of EnsureCreated
     
     var seeder = scope.ServiceProvider.GetRequiredService<DataSeedingService>();
     await seeder.SeedDataAsync();

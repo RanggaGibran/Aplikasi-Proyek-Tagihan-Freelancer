@@ -222,9 +222,135 @@ public class DataSeedingService
                 EstimatedHours = 20,
                 CreatedAt = DateTime.UtcNow.AddMonths(-2)
             }
+        };        _context.ProjectTasks.AddRange(tasks);
+        await _context.SaveChangesAsync();
+
+        // Create sample invoices
+        var invoices = new List<Invoice>
+        {
+            new Invoice
+            {
+                Id = Guid.NewGuid(),
+                InvoiceNumber = "INV-001",
+                ClientId = clients[0].Id,
+                ProjectId = projects[2].Id, // Mobile App project (completed)
+                IssueDate = DateTime.UtcNow.AddMonths(-1),
+                DueDate = DateTime.UtcNow.AddDays(-15),
+                Status = InvoiceStatus.Paid,
+                Notes = "Invoice for completed mobile app development",
+                CreatedAt = DateTime.UtcNow.AddMonths(-1)
+            },
+            new Invoice
+            {
+                Id = Guid.NewGuid(),
+                InvoiceNumber = "INV-002",
+                ClientId = clients[1].Id,
+                ProjectId = projects[0].Id, // E-commerce project (ongoing)
+                IssueDate = DateTime.UtcNow.AddDays(-15),
+                DueDate = DateTime.UtcNow.AddDays(15),
+                Status = InvoiceStatus.Sent,
+                Notes = "Partial payment for e-commerce development - Phase 1",
+                CreatedAt = DateTime.UtcNow.AddDays(-15)
+            },
+            new Invoice
+            {
+                Id = Guid.NewGuid(),
+                InvoiceNumber = "INV-003",
+                ClientId = clients[2].Id,
+                ProjectId = null, // Manual invoice without project
+                IssueDate = DateTime.UtcNow.AddDays(-7),
+                DueDate = DateTime.UtcNow.AddDays(23),
+                Status = InvoiceStatus.Draft,
+                Notes = "Consultation services for system architecture review",
+                CreatedAt = DateTime.UtcNow.AddDays(-7)
+            }
         };
 
-        _context.ProjectTasks.AddRange(tasks);
+        _context.Invoices.AddRange(invoices);
+        await _context.SaveChangesAsync();
+
+        // Create sample invoice items
+        var invoiceItems = new List<InvoiceItem>
+        {
+            // Items for INV-001 (Mobile App - completed tasks)
+            new InvoiceItem
+            {
+                Id = Guid.NewGuid(),
+                InvoiceId = invoices[0].Id,
+                Description = "App Architecture Design",
+                Quantity = 1,
+                UnitPrice = 5000000,
+                Amount = 5000000
+            },
+            new InvoiceItem
+            {
+                Id = Guid.NewGuid(),
+                InvoiceId = invoices[0].Id,
+                Description = "Real-time Chat Feature Implementation",
+                Quantity = 1,
+                UnitPrice = 10000000,
+                Amount = 10000000
+            },
+            new InvoiceItem
+            {
+                Id = Guid.NewGuid(),
+                InvoiceId = invoices[0].Id,
+                Description = "App Store Deployment",
+                Quantity = 1,
+                UnitPrice = 3000000,
+                Amount = 3000000
+            },
+
+            // Items for INV-002 (E-commerce - partial)
+            new InvoiceItem
+            {
+                Id = Guid.NewGuid(),
+                InvoiceId = invoices[1].Id,
+                Description = "Homepage Design & Development",
+                Quantity = 1,
+                UnitPrice = 8000000,
+                Amount = 8000000
+            },
+            new InvoiceItem
+            {
+                Id = Guid.NewGuid(),
+                InvoiceId = invoices[1].Id,
+                Description = "Product Catalog Implementation",
+                Quantity = 1,
+                UnitPrice = 7000000,
+                Amount = 7000000
+            },
+
+            // Items for INV-003 (Manual consultation)
+            new InvoiceItem
+            {
+                Id = Guid.NewGuid(),
+                InvoiceId = invoices[2].Id,
+                Description = "System Architecture Review",
+                Quantity = 8,
+                UnitPrice = 500000,
+                Amount = 4000000
+            },
+            new InvoiceItem
+            {
+                Id = Guid.NewGuid(),
+                InvoiceId = invoices[2].Id,
+                Description = "Performance Optimization Consultation",
+                Quantity = 4,
+                UnitPrice = 750000,
+                Amount = 3000000
+            }
+        };
+
+        _context.InvoiceItems.AddRange(invoiceItems);
+        await _context.SaveChangesAsync();
+
+        // Update invoice totals
+        invoices[0].TotalAmount = invoiceItems.Where(i => i.InvoiceId == invoices[0].Id).Sum(i => i.Amount);
+        invoices[1].TotalAmount = invoiceItems.Where(i => i.InvoiceId == invoices[1].Id).Sum(i => i.Amount);
+        invoices[2].TotalAmount = invoiceItems.Where(i => i.InvoiceId == invoices[2].Id).Sum(i => i.Amount);
+
+        _context.Invoices.UpdateRange(invoices);
         await _context.SaveChangesAsync();
     }
 }

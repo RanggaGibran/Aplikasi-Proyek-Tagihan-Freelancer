@@ -1,0 +1,330 @@
+@page "/invoices/edit/{InvoiceId:guid}"
+@page "/invoices/edit/new"
+@using Aplikasi_Proyek___Tagihan_Freelancer.Services
+@using Aplikasi_Proyek___Tagihan_Freelancer.Models
+@inject IInvoiceService InvoiceService
+@inject IProjectService ProjectService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+<PageTitle>@(IsNewInvoice ? "Buat Invoice Baru" : "Edit Invoice")</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/invoices">Tagihan</a></li>
+                    <li class="breadcrumb-item active">@(IsNewInvoice ? "Buat Baru" : "Edit")</li>
+                </ol>
+            </nav>
+            <h1 class="page-title">
+                <i class="bi bi-@(IsNewInvoice ? "plus-circle" : "pencil") me-2"></i> 
+                @(IsNewInvoice ? "Buat Invoice Baru" : "Edit Invoice")
+            </h1>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <EditForm Model="invoice" OnValidSubmit="SaveInvoice">
+            <DataAnnotationsValidator />
+            
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Detail Invoice</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nomor Invoice</label>
+                                    <InputText @bind-Value="invoice.InvoiceNumber" class="form-control" placeholder="Otomatis jika kosong" />
+                                    <ValidationMessage For="() => invoice.InvoiceNumber" class="text-danger" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Proyek *</label>
+                                    <InputSelect @bind-Value="invoice.ProjectId" class="form-select">
+                                        <option value="">Pilih Proyek</option>
+                                        @foreach (var project in projects)
+                                        {
+                                            <option value="@project.Id">@project.Name - @project.Client.Name</option>
+                                        }
+                                    </InputSelect>
+                                    <ValidationMessage For="() => invoice.ProjectId" class="text-danger" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Tanggal Terbit</label>
+                                    <InputDate @bind-Value="invoice.IssueDate" class="form-control" />
+                                    <ValidationMessage For="() => invoice.IssueDate" class="text-danger" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Tanggal Jatuh Tempo</label>
+                                    <InputDate @bind-Value="invoice.DueDate" class="form-control" />
+                                    <ValidationMessage For="() => invoice.DueDate" class="text-danger" />
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="form-label">Catatan</label>
+                                    <InputTextArea @bind-Value="invoice.Notes" class="form-control" rows="3" placeholder="Catatan tambahan untuk invoice" />
+                                    <ValidationMessage For="() => invoice.Notes" class="text-danger" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Invoice Items -->
+                    <div class="card mt-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Item Invoice</h5>
+                            <button type="button" class="btn btn-sm btn-primary" @onclick="AddNewItem">
+                                <i class="bi bi-plus-circle me-1"></i> Tambah Item
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            @if (!invoice.InvoiceItems.Any())
+                            {
+                                <div class="text-center text-muted py-4">
+                                    <i class="bi bi-file-earmark-text display-6"></i>
+                                    <div>Belum ada item invoice.</div>
+                                    <button type="button" class="btn btn-primary mt-2" @onclick="AddNewItem">
+                                        Tambah Item Pertama
+                                    </button>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Deskripsi</th>
+                                                <th width="100">Qty</th>
+                                                <th width="150">Harga Satuan</th>
+                                                <th width="150">Total</th>
+                                                <th width="80">Aksi</th>
+                                            </tr>
+                                        </thead>                                        <tbody>
+                                            @{
+                                                var itemsList = invoice.InvoiceItems.ToList();
+                                            }
+                                            @for (int i = 0; i < itemsList.Count; i++)
+                                            {
+                                                var index = i;
+                                                var item = itemsList[index];
+                                                <tr>
+                                                    <td>
+                                                        <InputText @bind-Value="item.Description" class="form-control form-control-sm" placeholder="Deskripsi item" />
+                                                    </td>
+                                                    <td>
+                                                        <InputNumber @bind-Value="item.Quantity" class="form-control form-control-sm" @onchange="() => CalculateTotal()" />
+                                                    </td>
+                                                    <td>
+                                                        <InputNumber @bind-Value="item.UnitPrice" class="form-control form-control-sm" @onchange="() => CalculateTotal()" />
+                                                    </td>
+                                                    <td>
+                                                        <strong>Rp @item.Total.ToString("N0")</strong>
+                                                    </td>
+                                                    <td>
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RemoveItem(index)">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Ringkasan</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Total Item:</span>
+                                <span>@invoice.InvoiceItems.Count</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3">
+                                <strong>Total Amount:</strong>
+                                <strong>Rp @invoice.TotalAmount.ToString("N0")</strong>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <InputSelect @bind-Value="invoice.Status" class="form-select">
+                                    <option value="@InvoiceStatus.Draft">Draft</option>
+                                    <option value="@InvoiceStatus.Sent">Terkirim</option>
+                                    <option value="@InvoiceStatus.Paid">Lunas</option>
+                                    <option value="@InvoiceStatus.Overdue">Jatuh Tempo</option>
+                                    <option value="@InvoiceStatus.Cancelled">Dibatalkan</option>
+                                </InputSelect>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle me-1"></i> Simpan Invoice
+                                </button>
+                                @if (!IsNewInvoice)
+                                {
+                                    <button type="button" class="btn btn-outline-success" @onclick="GeneratePdf">
+                                        <i class="bi bi-download me-1"></i> Download PDF
+                                    </button>
+                                }
+                                <a href="/invoices" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left me-1"></i> Kembali
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </EditForm>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid? InvoiceId { get; set; }
+
+    private Invoice invoice = new();
+    private List<Project> projects = new();
+    private bool isLoading = true;
+    private bool IsNewInvoice => !InvoiceId.HasValue || InvoiceId.Value == Guid.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProjects();
+        
+        if (!IsNewInvoice)
+        {
+            await LoadInvoice();
+        }
+        else
+        {
+            invoice = new Invoice
+            {
+                IssueDate = DateTime.UtcNow,
+                DueDate = DateTime.UtcNow.AddDays(30),
+                Status = InvoiceStatus.Draft,
+                InvoiceItems = new List<InvoiceItem>()
+            };
+        }
+        
+        isLoading = false;
+    }
+
+    private async Task LoadProjects()
+    {
+        try
+        {
+            projects = (await ProjectService.GetAllProjectsAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error loading projects: {ex.Message}");
+        }
+    }
+
+    private async Task LoadInvoice()
+    {
+        try
+        {
+            var loadedInvoice = await InvoiceService.GetInvoiceWithItemsByIdAsync(InvoiceId!.Value);            if (loadedInvoice != null)
+            {
+                invoice = loadedInvoice;
+                // Ensure InvoiceItems is a mutable list
+                if (invoice.InvoiceItems is not List<InvoiceItem>)
+                {
+                    invoice.InvoiceItems = invoice.InvoiceItems.ToList();
+                }
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Invoice tidak ditemukan");
+                Navigation.NavigateTo("/invoices");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error loading invoice: {ex.Message}");
+            Navigation.NavigateTo("/invoices");
+        }
+    }
+
+    private async Task SaveInvoice()
+    {
+        try
+        {
+            CalculateTotal();
+            
+            if (IsNewInvoice)
+            {
+                await InvoiceService.CreateInvoiceAsync(invoice);
+            }
+            else
+            {
+                await InvoiceService.UpdateInvoiceAsync(invoice);
+            }
+            
+            Navigation.NavigateTo("/invoices");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error saving invoice: {ex.Message}");
+        }
+    }
+
+    private void AddNewItem()
+    {
+        invoice.InvoiceItems.Add(new InvoiceItem
+        {
+            InvoiceId = invoice.Id,
+            Quantity = 1,
+            UnitPrice = 0
+        });
+    }    private void RemoveItem(int index)
+    {
+        var itemsList = invoice.InvoiceItems.ToList();
+        if (index >= 0 && index < itemsList.Count)
+        {
+            var itemToRemove = itemsList[index];
+            invoice.InvoiceItems.Remove(itemToRemove);
+            CalculateTotal();
+        }
+    }
+
+    private void CalculateTotal()
+    {
+        invoice.TotalAmount = invoice.InvoiceItems.Sum(item => item.Total);
+        StateHasChanged();
+    }
+
+    private async Task GeneratePdf()
+    {
+        try
+        {
+            var pdfBytes = await InvoiceService.GenerateInvoicePdfAsync(invoice.Id);
+            var fileName = $"Invoice_{invoice.InvoiceNumber}_{DateTime.Now:yyyyMMdd}.pdf";
+            
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, Convert.ToBase64String(pdfBytes));
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error generating PDF: {ex.Message}");
+        }
+    }
+}
